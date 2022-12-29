@@ -1,0 +1,99 @@
+---
+author: "Киселева Александра"
+title: "Лабораторная работа 3"
+output: html_document
+date: "2022-12-30"
+---
+
+### Задание 3_2.
+
+По файлу trades.RData. Были объединены таблицы в одну, уберан столбец с территорией торговли, т.к. там только Евросоюз, оставлен только строки с экспортом и импортом, вынесены данные по экспорту и импорту в отдельные переменные. Был построен линейный график изменения экспорта по годам обозначив разные группы экспортируемых товаров разным цветом. 
+
+Подключение библиотек и загрузка данных.
+
+```{r}
+library(dplyr)
+library(tibble)
+library(ggplot2)
+load('trades.RData')
+```
+
+Объединяем две таблицы и исключаем столбец с территорией торговли,оставляем только строки с экспортом и импортом.
+
+```{r}
+table <- tibble(Reduce(function(...) merge(..., all=TRUE), trades)) %>% group_by(time)
+table <- table %>% select(-geo)
+table[table$indic_et %in% c('Exports in million of ECU/EURO', 'Imports in million of ECU/EURO'), ]
+```
+
+Формируем две таблицы для экспорта и для импорта.
+
+```{r}
+export <- table %>% filter(indic_et=='Exports in million of ECU/EURO')
+import <- table %>% filter(indic_et=='Imports in million of ECU/EURO')
+```
+
+Считаем экспорт и импорт для различных категорий товаров по годам, меняем названия столбцов.
+
+```{r}
+exp <- aggregate(export$values, by=list(export$sitc06, export$time), sum)
+imp <- aggregate(import$values, by=list(export$sitc06, export$time), sum)
+colnames(exp) <- c("Group", "Time", "Value")
+colnames(imp) <- c("Group", "Time", "Value")
+```
+
+Строим графики.
+
+```{r}
+plot_exp <- ggplot(exp, aes(Time, Value, colour = Group)) + geom_point() + geom_line() + geom_label(size = 3, vjust = 1, aes(label=Value), colour = 'black') + ggtitle("Объемы экспорта по годам") + xlab("Год") + ylab("Объем экспорта") + theme(text = element_text(size=14), axis.text.x = element_text(angle=90, hjust=1))
+#plot_imp <- ggplot(imp, aes(Time, Value, colour = Group, label=Value))  + geom_point() + geom_line() +  geom_label(size = 3, vjust = 1, aes(label=Value), colour = 'black') + ggtitle("Объемы импорта по годам") + xlab("Год") + ylab("Объем импорта") + theme(text = element_text(size=14), axis.text.x = element_text(angle=90, hjust=1))
+#plot_imp
+plot_exp
+```
+
+
+### Задание 3_11.
+
+По данным, полученным из таблицы data.cvs, были построены круговая и столбчатая диаграммы для категории "Площадь земель, занятых лесными насаждениями (покрытых лесной растительностью), всего".
+
+Подключение графической библиотеки.
+```{r}
+library(ggplot2)
+```
+***
+
+Считывание данных из файла, обработка.
+```{r}
+path = 'data.csv'
+
+process_data <- function(path) {
+  data <- read.csv(path, sep=";")
+  colnames(data) <- c("breed", "name", "unit", "value")
+  subset(data, name == "Площадь земель, занятых лесными насаждениями (покрытых лесной растительностью), всего")
+}
+```
+***
+
+Отрисовывание диаграмм.
+```{r}
+plot_pie_chart <- function(data){
+  gg <- ggplot(data = data, mapping = aes(x = '', y = value, fill = breed)) + geom_col() + coord_polar(theta = 'y') + xlab("вид породы (цвет)") + ylab("площадь (число)") + ggtitle('Площадь земель, занятых лесными насаждениями\n(покрытых лесной растительностью), всего.\n\nКруговая диаграмма')
+  gg <- gg + guides(fill = guide_legend(title = "вид породы"))
+  print(gg)
+}
+
+plot_bar_chart <- function(data){
+  gg <- ggplot(data = data, mapping = aes(x = breed, y = value, fill = breed)) + geom_col() + coord_flip() + xlab("вид породы") + ylab("площадь") + ggtitle('Площадь земель, занятых лесными насаждениями\n(покрытых лесной растительностью), всего.\n\nСтолбчатая диаграмма') + geom_text(aes(label = value), vjust = 0, colour = "black")
+  gg <- gg + guides( fill = guide_legend(title = "вид породы"))
+  print(gg)
+}
+```
+***
+
+Вызов функций.
+```{r}
+data <- process_data(path)
+data[[4]] <- as.numeric(sub(',', '.', data[[4]]))
+plot_pie_chart(data)
+plot_bar_chart(data)
+```
