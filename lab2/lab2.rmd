@@ -1,0 +1,85 @@
+---
+author: "Киселева Александра"
+title: "Лабораторная работа 2"
+output: html_document
+date: "2022-12-30"
+---
+
+### Задание 2_11
+
+Была написана функция, которая находит 2 соседних дня с максимальным перепадом температуры в файле "RH_T.csv".
+
+Идем в цикле, сравнивая каждый раз текущую и следующую за ней температуру. Если нашли разницу больше, то запоминаем ее.
+
+```{r}
+max_dif <- function(day, temp) {
+   n <- 1
+   dif <- abs(temp[n] - temp[n + 1])
+   for (i in 2 : length(temp)-1) {
+     tmp <- abs(temp[i] - temp[i + 1])
+     if (tmp > dif) {
+        dif <- tmp
+        n <- i
+     }
+   }
+   c(day[n], day[n + 1], dif)
+}
+```
+
+Получаем нужные данные и применяем функцию.
+
+```{r}
+data <- read.csv("RH_T.csv")
+day <- unlist(data["YYYYMMDD"])
+temp <- unlist(data["T2M"])
+print(max_dif(day, temp))
+```
+
+### Задание 2_26
+
+Была написана функция, которая на вход принимает название города, округа или штата, а на выход выдает количество больниц в нем, процент детских больниц и процент психиатрических больниц. Если значение переданное на вход функции не является городом, округом или штатом, то функция выдавает соответствующее сообщение об ошибке.
+
+Считывание файла.
+```{r}
+data <- read.csv("Payment_and_Value_of_Care-Hospital.csv")
+```
+
+Проверка входного значения на правильность и подсчет количества больниц.
+
+```{r}
+check_name <- function(name) {
+  
+  check_city <- data[data$City == name, "Facility.ID"]
+  check_country <- data[data$Country.Name == name, "Facility.ID"]
+  check_state <- data[data$State == name, "Facility.ID"]
+  
+  check <- NULL
+  if(length(check_city)){
+    print(paste("City - ",name,": ",length(unique(check_city))))
+    check <- check_city
+  }
+  if(length(check_country)){
+    print(paste("Country.Name - ",name,": ",length(unique(check_country))))
+    check <- check_country
+  }
+  if(length(check_state)){
+    print(paste("State - ",name,": ",length(unique(check_state))))
+    check <- check_state
+  }
+  if(length(unique(check)) == 0) 
+    message("Incorrect place")
+  else 
+    return(length(unique(check)))
+}
+```
+
+Подсчет процента детских больниц и психиатрических больниц осуществить не удастся, т.к. в данной для задания таблице нет таких данных.
+
+Вызов функции для всех случаев: город, округ, штат, ошибочное значение соответственно.
+```{r}
+print(check_name("FLORENCE"))
+print(check_name("MARSHALL"))
+print(check_name("AL"))
+print(check_name("123"))
+```
+
